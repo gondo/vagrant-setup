@@ -1,0 +1,55 @@
+# Default server block blacklisting all unconfigured access
+server {
+    listen      80 default_server;
+    server_name _;
+    root        /var/www/default/public_html/;
+    index       index.html index.php;
+ 
+    access_log  /var/www/default/logs/access_log;
+    error_log   /var/www/default/logs/error_log;
+ 
+    location / {
+        try_files $uri $uri/ @handler;
+        expires 30d;
+    }
+ 
+    location  /. {
+        return 404;
+    }
+ 
+    location @handler {
+        rewrite / /index.php;
+    }
+ 
+    location ~ .php/ {
+        rewrite ^(.*.php)/ $1 last;
+    }
+ 
+    location ~ \.php$ {
+        try_files           $uri =404;
+        expires             off;
+        fastcgi_index       index.php;
+        fastcgi_pass        127.0.0.1:9000;
+        fastcgi_param       SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include             /etc/nginx/fastcgi_params;
+        fastcgi_intercept_errors    on;
+        fastcgi_ignore_client_abort off;
+        fastcgi_connect_timeout     60;
+        fastcgi_send_timeout        180;
+        fastcgi_read_timeout        180;
+    }
+ 
+    # Don't log robots.txt requests
+    location = /robots.txt {
+        allow           all;
+        access_log      off;
+        log_not_found   off;
+    }
+ 
+    # Deny access to hidden files
+    location ~ /\. {
+        deny            all;
+        access_log      off;
+        log_not_found   off;
+    }
+}
